@@ -33,3 +33,9 @@ Then call saveDoc, bulkSave, removeDoc, get, or log.
 ## Caveat
 
 This package is in its infancy, use with caution.
+
+## Build Status
+
+Builds brought to you courtesy of [Travis CI](https://travis-ci.org/medic/couchdb-audit).
+
+[![Build Status](https://travis-ci.org/medic/couchdb-audit.png?branch=master)](https://travis-ci.org/medic/couchdb-audit/branches)
