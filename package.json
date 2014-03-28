@@ -3,9 +3,10 @@
   "description": "An npm and Kanso module for auditing changes to CouchDB documents",
   "main": "./couchdb-audit/log",
   "author": {
-    "name": "Gareth Bowen"
+    "name": "Gareth Bowen",
+    "email": "gareth@bowenwebdesign.co.nz"
   },
-  "version": "0.0.1",
+  "version": "0.1.0",
   "scripts": {
     "test": "nodeunit tests/couchdb-audit/audit.js"
   },
@@ -14,5 +15,8 @@
   },
   "devDependencies": {
     "sinon": "~1.9.0"
-  }
+  },
+  "readme": "README.md",
+  "repository": "http://github.com/medic/couchdb-audit.git",
+  "license": "MIT"
 }
