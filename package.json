@@ -1,0 +1,18 @@
+{
+  "name": "couchdb-audit",
+  "description": "An npm and Kanso module for auditing changes to CouchDB documents",
+  "main": "./couchdb-audit/log",
+  "author": {
+    "name": "Gareth Bowen"
+  },
+  "version": "0.0.1",
+  "scripts": {
+    "test": "nodeunit tests/couchdb-audit/audit.js"
+  },
+  "dependencies": {
+    "async": ">=0.2.0"
+  },
+  "devDependencies": {
+    "sinon": "~1.9.0"
+  }
+}
