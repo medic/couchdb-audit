@@ -1,4 +1,12 @@
-var sinon = require('sinon');
+var sinon = require('sinon'),
+  session = require('session');
+
+exports.tearDown = function (callback) {
+  if (session.info.restore) {
+    session.info.restore();
+  }
+  callback();
+};
 
 exports['saving a new `data_record` creates a new `audit_record`'] = function(test) {
   test.expect(16);
@@ -25,7 +33,6 @@ exports['saving a new `data_record` creates a new `audit_record`'] = function(te
   var saveDoc = sinon.spy(db, 'saveDoc');
   var bulkSave = sinon.spy(db, 'bulkSave');
   var newUUID = sinon.spy(db, 'newUUID');
-  var session = {};
   var sessionInfo = sinon.stub(session, 'info').callsArgWith(0, null, {
     userCtx: {name: userName}
   });
@@ -83,7 +90,6 @@ exports['saving a new `data_record` with id set creates a new `audit_record`'] =
   var saveDoc = sinon.spy(db, 'saveDoc');
   var bulkSave = sinon.spy(db, 'bulkSave');
   var getView = sinon.spy(db, 'getView');
-  var session = {};
   var sessionInfo = sinon.stub(session, 'info').callsArgWith(0, null, {
     userCtx: {name: userName}
   });
@@ -142,14 +148,11 @@ exports['updating a `data_record` updates the `audit_record`'] = function(test) 
     },
     getView: function(appname, view, query, callback) {
       callback(null, {'rows':[{
+        key: [docId],
         doc: {
           type: 'audit_record',
           record_id: docId,
-          history: [{
-            action: 'create',
-            user: user1,
-            doc: doc1
-          }]
+          history: [{ action: 'create', user: user1, doc: doc1 }]
         }
       }]});
     }
@@ -157,7 +160,6 @@ exports['updating a `data_record` updates the `audit_record`'] = function(test) 
   var saveDoc = sinon.spy(db, 'saveDoc');
   var bulkSave = sinon.spy(db, 'bulkSave');
   var getView = sinon.spy(db, 'getView');
-  var session = {};
   sinon.stub(session, 'info').callsArgWith(0, null, {
     userCtx: {name: user2}
   });
@@ -215,14 +217,11 @@ exports['deleting a `data_record` updates the `audit_record`'] = function(test) 
     },
     getView: function(appname, view, query, callback) {
       callback(null, {'rows':[{
+        key: [docId],
         doc: {
           type: 'audit_record',
           record_id: docId,
-          history: [{
-            action: 'create',
-            user: user1,
-            doc: doc1
-          }]
+          history: [{ action: 'create', user: user1, doc: doc1 }]
         }
       }]});
     }
@@ -230,7 +229,6 @@ exports['deleting a `data_record` updates the `audit_record`'] = function(test) 
   var saveDoc = sinon.spy(db, 'saveDoc');
   var bulkSave = sinon.spy(db, 'bulkSave');
   var getView = sinon.spy(db, 'getView');
-  var session = {};
   sinon.stub(session, 'info').callsArgWith(0, null, {
     userCtx: {name: user2}
   });
@@ -296,7 +294,6 @@ exports['updating a `data_record` creates an `audit_record` if required'] = func
   var bulkSave = sinon.spy(db, 'bulkSave');
   var getView = sinon.spy(db, 'getView');
   var getDoc = sinon.spy(db, 'getDoc');
-  var session = {};
   sinon.stub(session, 'info').callsArgWith(0, null, {
     userCtx: {name: 'joe'}
   });
@@ -347,20 +344,24 @@ exports['bulkSave updates all relevant `audit_record` docs'] = function(test) {
     },
     getView: function(appname, view, query, callback) {
       callback(null, {'rows':[{
+        key: [docId1],
         doc: {
           type: 'audit_record',
-          record_id: (query.startkey === docId1) ? docId1 : docId2,
-          history: [{
-            action: 'create',
-            doc: (query.startkey === docId1) ? doc1 : doc2
-          }]
+          record_id: docId1,
+          history: [{ action: 'create', doc: doc1 }]
+        }
+      }, {
+        key: [docId2],
+        doc: {
+          type: 'audit_record',
+          record_id: docId2,
+          history: [{ action: 'create', doc: doc2 }]
         }
       }]});
     }
   };
   var save = sinon.spy(db, 'bulkSave');
   var getView = sinon.spy(db, 'getView');
-  var session = {};
   sinon.stub(session, 'info').callsArgWith(0, null, {
     userCtx: {name: 'joe'}
   });
@@ -372,7 +373,7 @@ exports['bulkSave updates all relevant `audit_record` docs'] = function(test) {
     test.equal(err, null);
   });
 
-  test.equal(getView.callCount, 2);
+  test.equal(getView.callCount, 1);
   test.equal(save.callCount, 2);
   var auditRecord = save.firstCall.args[0];
   var dataRecord = save.secondCall.args[0];
@@ -438,7 +439,6 @@ exports['bulkSave creates `audit_record` docs when needed'] = function(test) {
   var save = sinon.spy(db, 'bulkSave');
   var getView = sinon.spy(db, 'getView');
   var newUUID = sinon.spy(db, 'newUUID');
-  var session = {};
   sinon.stub(session, 'info').callsArgWith(0, null, {
     userCtx: {name: 'joe'}
   });
@@ -450,7 +450,7 @@ exports['bulkSave creates `audit_record` docs when needed'] = function(test) {
     test.equal(err, null);
   });
 
-  test.equal(getView.callCount, 2);
+  test.equal(getView.callCount, 1);
   test.equal(save.callCount, 2);
   test.equal(newUUID.callCount, 1);
   var auditRecord = save.firstCall.args[0];
@@ -504,7 +504,6 @@ exports['when audit fails, doc is not saved and error returned'] = function(test
     }
   };
   var bulkSave = sinon.spy(db, 'bulkSave');
-  var session = {};
   sinon.stub(session, 'info').callsArgWith(0, null, {
     userCtx: {name: 'joe'}
   });
@@ -559,14 +558,11 @@ exports['removeDoc updates the `audit_record` for the given `data_record`'] = fu
   var db = {
     getView: function(appname, view, query, callback) {
       callback(null, {'rows':[{
+        key: [docId],
         doc: {
           type: 'audit_record',
           record_id: docId,
-          history: [{
-            action: 'create',
-            user: user1,
-            doc: doc1
-          }]
+          history: [{ action: 'create', user: user1, doc: doc1 }]
         }
       }]});
     },
@@ -579,7 +575,6 @@ exports['removeDoc updates the `audit_record` for the given `data_record`'] = fu
   };
   var removeDoc = sinon.spy(db, 'removeDoc');
   var bulkSave = sinon.spy(db, 'bulkSave');
-  var session = {};
   var sessionInfo = sinon.stub(session, 'info').callsArgWith(0, null, {
     userCtx: {name: user2}
   });

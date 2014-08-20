@@ -25,14 +25,20 @@ exports['bulkSave works with felix couchdb node module'] = function(test) {
     },
     view: function(appname, view, query, callback) {
       test.equal(name, appname);
+      test.deepEqual(query.keys, [[docId1], [docId2]]);
       callback(null, {"rows":[{
+        key: [docId1],
         doc: {
           type: 'audit_record',
-          record_id: (query.startkey === docId1) ? docId1 : docId2,
-          history: [{
-            action: 'create',
-            doc: (query.startkey === docId1) ? doc1 : doc2
-          }]
+          record_id: docId1,
+          history: [{ action: 'create', doc: doc1 }]
+        }
+      }, {
+        key: [docId2],
+        doc: {
+          type: 'audit_record',
+          record_id: docId2,
+          history: [{ action: 'create', doc: doc2 }]
         }
       }]});
     }
@@ -45,7 +51,7 @@ exports['bulkSave works with felix couchdb node module'] = function(test) {
     test.equal(err, null);
   });
 
-  test.equal(getView.callCount, 2);
+  test.equal(getView.callCount, 1);
   test.equal(save.callCount, 2);
   var auditRecord = save.firstCall.args[0].docs;
   
@@ -172,7 +178,7 @@ exports['saving a new `data_record` with id set creates a new `audit_record`'] =
 };
 
 exports['updating a `data_record` updates the `audit_record`'] = function(test) {
-  test.expect(17);
+  test.expect(18);
 
   var docId = 123;
   var rev1 = '1-ASD';
@@ -196,15 +202,13 @@ exports['updating a `data_record` updates the `audit_record`'] = function(test) 
       callback(null);
     },
     view: function(appname, view, query, callback) {
-      callback(null, {'rows':[{
+      test.deepEqual(query.keys, [[docId]]);
+      callback(null, {"rows":[{
+        key: [docId],
         doc: {
           type: 'audit_record',
           record_id: docId,
-          history: [{
-            action: 'create',
-            user: user,
-            doc: doc1
-          }]
+          history: [{ action: 'create', user: user, doc: doc1 }]
         }
       }]});
     }
@@ -240,7 +244,7 @@ exports['updating a `data_record` updates the `audit_record`'] = function(test) 
 };
 
 exports['deleting a `data_record` updates the `audit_record`'] = function(test) {
-  test.expect(15);
+  test.expect(16);
 
   var docId = 123;
   var doc1 = {
@@ -261,15 +265,13 @@ exports['deleting a `data_record` updates the `audit_record`'] = function(test) 
       callback(null);
     },
     view: function(appname, view, query, callback) {
-      callback(null, {'rows':[{
+      test.deepEqual(query.keys, [[docId]]);
+      callback(null, {"rows":[{
+        key: [docId],
         doc: {
           type: 'audit_record',
           record_id: docId,
-          history: [{
-            action: 'create',
-            user: user,
-            doc: doc1
-          }]
+          history: [{ action: 'create', user: user, doc: doc1 }]
         }
       }]});
     }
@@ -361,7 +363,7 @@ exports['updating a `data_record` creates an `audit_record` if required'] = func
 };
 
 exports['bulkSave updates all relevant `audit_record` docs'] = function(test) {
-  test.expect(13);
+  test.expect(14);
 
   var docId1 = 123;
   var docId2 = 456;
@@ -381,14 +383,20 @@ exports['bulkSave updates all relevant `audit_record` docs'] = function(test) {
       callback(null);
     },
     view: function(appname, view, query, callback) {
-      callback(null, {'rows':[{
+      test.deepEqual(query.keys, [[docId1], [docId2]]);
+      callback(null, {"rows":[{
+        key: [docId1],
         doc: {
           type: 'audit_record',
-          record_id: (query.startkey === docId1) ? docId1 : docId2,
-          history: [{
-            action: 'create',
-            doc: (query.startkey === docId1) ? doc1 : doc2
-          }]
+          record_id: docId1,
+          history: [{ action: 'create', doc: doc1 }]
+        }
+      }, {
+        key: [docId2],
+        doc: {
+          type: 'audit_record',
+          record_id: docId2,
+          history: [{ action: 'create', doc: doc2 }]
         }
       }]});
     }
@@ -401,7 +409,7 @@ exports['bulkSave updates all relevant `audit_record` docs'] = function(test) {
     test.equal(err, null);
   });
 
-  test.equal(getView.callCount, 2);
+  test.equal(getView.callCount, 1);
   test.equal(save.callCount, 2);
   var auditRecord = save.firstCall.args[0].docs;
   var dataRecord = save.secondCall.args[0].docs;
@@ -475,7 +483,7 @@ exports['bulkSave creates `audit_record` docs when needed'] = function(test) {
     test.equal(err, null);
   });
 
-  test.equal(getView.callCount, 2);
+  test.equal(getView.callCount, 1);
   test.equal(save.callCount, 2);
   test.equal(newUUID.callCount, 1);
   var auditRecord = save.firstCall.args[0].docs;
@@ -566,7 +574,7 @@ exports['get returns the `audit_record` for the given `data_record`'] = function
 };
 
 exports['removeDoc updates the `audit_record` for the given `data_record`'] = function(test) {
-  test.expect(13);
+  test.expect(14);
   
   var docId = 123;
   var doc1 = {
@@ -577,15 +585,13 @@ exports['removeDoc updates the `audit_record` for the given `data_record`'] = fu
 
   var db = {
     view: function(appname, view, query, callback) {
-      callback(null, {'rows':[{
+      test.deepEqual(query.keys, [[docId]]);
+      callback(null, {"rows":[{
+        key: [docId],
         doc: {
           type: 'audit_record',
           record_id: docId,
-          history: [{
-            action: 'create',
-            user: user,
-            doc: doc1
-          }]
+          history: [{ action: 'create', user: user, doc: doc1 }]
         }
       }]});
     },

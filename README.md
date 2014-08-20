@@ -34,6 +34,11 @@ Then call saveDoc, bulkSave, removeDoc, get, or log.
 
 This package is in its infancy, use with caution.
 
+## Publishing
+
+`kanso publish`
+`npm publish`
+
 ## Build Status
 
 Builds brought to you courtesy of [Travis CI](https://travis-ci.org/medic/couchdb-audit).
