@@ -34,12 +34,18 @@ Then call saveDoc, bulkSave, removeDoc, get, or log.
 
 This package is in its infancy, use with caution.
 
-## Publishing
+## Development
+
+### Publishing
 
 `kanso publish`
 `npm publish`
 
-## Build Status
+### Testing
+
+`grunt test` for the Node implementation. Deploy to kanso to run the kanso tests.
+
+### Build Status
 
 Builds brought to you courtesy of [Travis CI](https://travis-ci.org/medic/couchdb-audit).
 

@@ -43,8 +43,9 @@ function init(appname, client, db, nameFn) {
 
       getAllRecords(docs, function(err, _records) {
         if (err) {
-          return _cb('Failed retrieving existing audit logs. ' + err);
+          return callback('Failed retrieving existing audit logs. ' + err);
         }
+        var auditDoc;
         async.map(docs, function(_doc, _cb) {
           if (!_doc._id) {
             client.uuids(1, function(err, ids) {
@@ -52,14 +53,14 @@ function init(appname, client, db, nameFn) {
                 return _cb('Failed generating a new database ID. ' + err);
               }
               _doc._id = ids.uuids[0];
-              var audit = createAudit(_doc);
-              appendHistory(audit.history, 'create', userName, _doc);
-              _cb(null, audit);
+              auditDoc = createAudit(_doc);
+              appendHistory(auditDoc.history, 'create', userName, _doc);
+              _cb(null, auditDoc);
             });
           } else {
             var record = findRecord(_doc, _records);
             if (!record) {
-              var audit = createAudit(_doc);
+              auditDoc = createAudit(_doc);
               if (_doc._rev) {
                 // no existing audit, but existing revision - log current
                 db.getDoc(_doc._id, function(err, _oldDoc) {
@@ -67,22 +68,22 @@ function init(appname, client, db, nameFn) {
                     return _cb('Failed retrieving existing document. ' + err);
                   }
                   var action = isInitialRev(_oldDoc) ? 'create' : 'update';
-                  appendHistory(audit.history, action, null, _oldDoc);
+                  appendHistory(auditDoc.history, action, null, _oldDoc);
                   action = actionOverride || _doc._deleted ? 'delete' : 'update';
-                  appendHistory(audit.history, action, userName, _doc);
-                  _cb(null, audit);
+                  appendHistory(auditDoc.history, action, userName, _doc);
+                  _cb(null, auditDoc);
                 });
               } else {
                 // no existing audit or existing revision
-                appendHistory(audit.history, 'create', userName, _doc);
-                _cb(null, audit);
+                appendHistory(auditDoc.history, 'create', userName, _doc);
+                _cb(null, auditDoc);
               }
             } else {
               // existing audit
-              var audit = record.doc;
+              auditDoc = record.doc;
               var action = actionOverride || _doc._deleted ? 'delete' : 'update';
-              appendHistory(audit.history, action, userName, _doc);
-              _cb(null, audit);
+              appendHistory(auditDoc.history, action, userName, _doc);
+              _cb(null, auditDoc);
             }
           }
         }, function(err, auditRecords) {
@@ -93,7 +94,7 @@ function init(appname, client, db, nameFn) {
         });
       });
     });
-  };
+  }
 
   function findRecord(doc, records) {
     for (var i = 0; i < records.length; i++) {
@@ -101,7 +102,7 @@ function init(appname, client, db, nameFn) {
         return records[i];
       }
     }
-  };
+  }
 
   function getAllRecords(docs, callback) {
     var ids = [];
@@ -114,19 +115,19 @@ function init(appname, client, db, nameFn) {
       return callback(null, []);
     }
     getAll(ids, callback);
-  };
+  }
 
   function clone(obj) {
-    var clone = {};
+    var result = {};
     for (var attr in obj) {
-        if (obj.hasOwnProperty(attr)) clone[attr] = obj[attr];
+        if (obj.hasOwnProperty(attr)) result[attr] = obj[attr];
     }
-    return clone;
-  };
+    return result;
+  }
 
   function isInitialRev(doc) {
     return doc._rev.indexOf('1-') === 0;
-  };
+  }
 
   function createAudit(record) {
     return {
@@ -134,7 +135,7 @@ function init(appname, client, db, nameFn) {
       record_id: record._id,
       history: []
     };
-  };
+  }
 
   function appendHistory(history, action, user, doc) {
     if (history.length > 0) {
@@ -148,13 +149,13 @@ function init(appname, client, db, nameFn) {
       timestamp: new Date().toISOString(),
       doc: doc
     });
-  };
+  }
 
   function get(docId, callback) {
     getAll([docId], function(err, result) {
       callback(err, result && result[0]);
     });
-  };
+  }
 
   function getAll(docIds, callback) {
     var keys = docIds.map(function(docId) {
@@ -169,7 +170,7 @@ function init(appname, client, db, nameFn) {
       }
       callback(null, result.rows);
     });
-  };
+  }
 
   return {
 

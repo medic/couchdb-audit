@@ -129,6 +129,28 @@ exports['saving a new `data_record` creates a new `audit_record`'] = function(te
 
 };
 
+exports['when getView fails, doc is not saved and error returned'] = function(test) {
+  test.expect(1);
+
+  var errMsg = 'ERR1';
+  var doc1 = {
+    _id: '251849',
+    type: 'data_record'
+  };
+
+  var db = {
+    view: function(appname, view, query, callback) {
+      callback(errMsg);
+    }
+  };
+  var audit = require('../../couchdb-audit/log').withNode(db, user);
+  audit.saveDoc(doc1, function(err, result) {
+    test.equal(err, 'Failed saving audit record. Failed retrieving existing audit logs. ' + errMsg);
+  });
+
+  test.done();
+};
+
 exports['saving a new `data_record` with id set creates a new `audit_record`'] = function(test) {
   test.expect(14);
   
