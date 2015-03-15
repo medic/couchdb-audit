@@ -3,7 +3,7 @@ var log = require('./log');
 var getNameFn = function(name) {
   return (typeof name === 'string') ?
     function(callback) { callback(null, name); } : name;
-}
+};
 
 module.exports = {
 

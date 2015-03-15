@@ -1,11 +1,10 @@
 var sinon = require('sinon'),
   user = 'someuser';
 
-exports['bulkSave works with nano couchdb node module'] = function(test) {
-  test.expect(19);
+exports['bulkSave works with felix couchdb node module'] = function(test) {
+  test.expect(18);
 
-  var name = 'testAppName';
-  var dbName = 'testDbName';
+  var name = 'test';
   var docId1 = 123;
   var docId2 = 456;
   var doc1 = {
@@ -20,13 +19,14 @@ exports['bulkSave works with nano couchdb node module'] = function(test) {
   };
 
   var db = {
-    bulk: function(options, callback) {
+    name: name,
+    bulkDocs: function(options, callback) {
       callback(null);
     },
     view: function(appname, view, query, callback) {
       test.equal(name, appname);
       test.deepEqual(query.keys, [[docId1], [docId2]]);
-      callback(null, {rows:[{
+      callback(null, {"rows":[{
         key: [docId1],
         doc: {
           type: 'audit_record',
@@ -43,15 +43,9 @@ exports['bulkSave works with nano couchdb node module'] = function(test) {
       }]});
     }
   };
-  var nano = {
-    use: function(name) {
-      test.equal(dbName, name);
-      return db;
-    }
-  };
-  var save = sinon.spy(db, 'bulk');
+  var save = sinon.spy(db, 'bulkDocs');
   var getView = sinon.spy(db, 'view');
-  var audit = require('../../../couchdb-audit/node').withNano(nano, dbName, name, user);
+  var audit = require('../../couchdb-audit/node').withFelix(db, user);
 
   audit.bulkSave([doc1, doc2], {all_or_nothing: true}, function(err, result) {
     test.equal(err, null);
@@ -94,25 +88,22 @@ exports['saving a new `data_record` creates a new `audit_record`'] = function(te
   };
 
   var db = {
-    insert: function(doc, callback) { 
+    saveDoc: function(doc, callback) { 
       callback(null, {id: docId}); 
     },
-    bulk: function(options, callback) {
+    bulkDocs: function(options, callback) {
       callback(null);
-    }
-  };
-  var nano = {
-    use: function() {
-      return db;
     },
-    request: function(options, callback) {
-      callback(null, {uuids: [docId]});
+    client: {
+      uuids: function(count, callback) {
+        callback(null, {uuids: [docId]});
+      }
     }
   };
-  var saveDoc = sinon.spy(db, 'insert');
-  var bulkSave = sinon.spy(db, 'bulk');
-  var newUUID = sinon.spy(nano, 'request');
-  var audit = require('../../../couchdb-audit/node').withNano(nano, 'medic', 'test', user);
+  var saveDoc = sinon.spy(db, 'saveDoc');
+  var bulkSave = sinon.spy(db, 'bulkDocs');
+  var newUUID = sinon.spy(db.client, 'uuids');
+  var audit = require('../../couchdb-audit/node').withFelix(db, user);
 
   audit.saveDoc(doc1, function(err, result) {
     test.equal(err, null);
@@ -152,12 +143,7 @@ exports['when getView fails, doc is not saved and error returned'] = function(te
       callback(errMsg);
     }
   };
-  var nano = {
-    use: function() {
-      return db;
-    }
-  };
-  var audit = require('../../../couchdb-audit/node').withNano(nano, 'medic', 'test', user);
+  var audit = require('../../couchdb-audit/node').withFelix(db, user);
   audit.saveDoc(doc1, function(err, result) {
     test.equal(err, 'Failed saving audit record. Failed retrieving existing audit logs. ' + errMsg);
   });
@@ -176,25 +162,20 @@ exports['saving a new `data_record` with id set creates a new `audit_record`'] =
   };
 
   var db = {
-    insert: function(doc, callback) { 
+    saveDoc: function(doc, callback) { 
       callback(null, {id: docId}); 
     },
-    bulk: function(options, callback) {
+    bulkDocs: function(options, callback) {
       callback(null);
     },
     view: function(appname, view, query, callback) {
       callback(null, {'rows':[]});
     }
   };
-  var nano = {
-    use: function() {
-      return db;
-    }
-  };
-  var saveDoc = sinon.spy(db, 'insert');
-  var bulkSave = sinon.spy(db, 'bulk');
+  var saveDoc = sinon.spy(db, 'saveDoc');
+  var bulkSave = sinon.spy(db, 'bulkDocs');
   var getView = sinon.spy(db, 'view');
-  var audit = require('../../../couchdb-audit/node').withNano(nano, 'medic', 'test', user);
+  var audit = require('../../couchdb-audit/node').withFelix(db, user);
 
   audit.saveDoc(doc1, function(err, result) {
     test.equal(err, null);
@@ -236,10 +217,10 @@ exports['updating a `data_record` updates the `audit_record`'] = function(test) 
   };
 
   var db = {
-    insert: function(doc, callback) { 
+    saveDoc: function(doc, callback) { 
       callback(null, {id: docId});
     },
-    bulk: function(options, callback) {
+    bulkDocs: function(options, callback) {
       callback(null);
     },
     view: function(appname, view, query, callback) {
@@ -254,15 +235,10 @@ exports['updating a `data_record` updates the `audit_record`'] = function(test) 
       }]});
     }
   };
-  var nano = {
-    use: function() {
-      return db;
-    }
-  };
-  var saveDoc = sinon.spy(db, 'insert');
-  var bulkSave = sinon.spy(db, 'bulk');
+  var saveDoc = sinon.spy(db, 'saveDoc');
+  var bulkSave = sinon.spy(db, 'bulkDocs');
   var getView = sinon.spy(db, 'view');
-  var audit = require('../../../couchdb-audit/node').withNano(nano, 'medic', 'test', user);
+  var audit = require('../../couchdb-audit/node').withFelix(db, user);
 
   audit.saveDoc(doc2, function(err, result) {
     test.equal(err, null);
@@ -304,10 +280,10 @@ exports['deleting a `data_record` updates the `audit_record`'] = function(test) 
   };
 
   var db = { 
-    insert: function(doc, callback) { 
+    saveDoc: function(doc, callback) { 
       callback(null, {id: docId});
     },
-    bulk: function(options, callback) {
+    bulkDocs: function(options, callback) {
       callback(null);
     },
     view: function(appname, view, query, callback) {
@@ -322,15 +298,10 @@ exports['deleting a `data_record` updates the `audit_record`'] = function(test) 
       }]});
     }
   };
-  var nano = {
-    use: function() {
-      return db;
-    }
-  };
-  var saveDoc = sinon.spy(db, 'insert');
-  var bulkSave = sinon.spy(db, 'bulk');
+  var saveDoc = sinon.spy(db, 'saveDoc');
+  var bulkSave = sinon.spy(db, 'bulkDocs');
   var getView = sinon.spy(db, 'view');
-  var audit = require('../../../couchdb-audit/node').withNano(nano, 'medic', 'test', user);
+  var audit = require('../../couchdb-audit/node').withFelix(db, user);
 
   audit.saveDoc(doc2, function(err, result) {
     test.equal(err, null);
@@ -373,29 +344,24 @@ exports['updating a `data_record` creates an `audit_record` if required'] = func
   };
 
   var db = { 
-    insert: function(doc, callback) { 
+    saveDoc: function(doc, callback) { 
       callback(null, {id: docId});
     },
-    bulk: function(options, callback) {
+    bulkDocs: function(options, callback) {
       callback(null);
     },
     view: function(appname, view, query, callback) {
       callback(null, {'rows':[]});
     },
-    get: function(id, callback) {
+    getDoc: function(id, callback) {
       callback(null, doc1);
     }
   };
-  var nano = {
-    use: function() {
-      return db;
-    }
-  };
-  var saveDoc = sinon.spy(db, 'insert');
-  var bulkSave = sinon.spy(db, 'bulk');
+  var saveDoc = sinon.spy(db, 'saveDoc');
+  var bulkSave = sinon.spy(db, 'bulkDocs');
   var getView = sinon.spy(db, 'view');
-  var getDoc = sinon.spy(db, 'get');
-  var audit = require('../../../couchdb-audit/node').withNano(nano, 'medic', 'test', user);
+  var getDoc = sinon.spy(db, 'getDoc');
+  var audit = require('../../couchdb-audit/node').withFelix(db, user);
 
   audit.saveDoc(doc2, function(err, result) {
     test.equal(err, null);
@@ -435,7 +401,7 @@ exports['bulkSave updates all relevant `audit_record` docs'] = function(test) {
   };
 
   var db = { 
-    bulk: function(options, callback) {
+    bulkDocs: function(options, callback) {
       callback(null);
     },
     view: function(appname, view, query, callback) {
@@ -457,14 +423,9 @@ exports['bulkSave updates all relevant `audit_record` docs'] = function(test) {
       }]});
     }
   };
-  var nano = {
-    use: function() {
-      return db;
-    }
-  };
-  var save = sinon.spy(db, 'bulk');
+  var save = sinon.spy(db, 'bulkDocs');
   var getView = sinon.spy(db, 'view');
-  var audit = require('../../../couchdb-audit/node').withNano(nano, 'medic', 'test', user);
+  var audit = require('../../couchdb-audit/node').withFelix(db, user);
 
   audit.bulkSave([doc1, doc2], {all_or_nothing: true}, function(err, result) {
     test.equal(err, null);
@@ -520,28 +481,25 @@ exports['bulkSave creates `audit_record` docs when needed'] = function(test) {
   };
 
   var db = { 
-    bulk: function(options, callback) {
+    bulkDocs: function(options, callback) {
       callback(null);
     },
     view: function(appname, view, query, callback) {
       callback(null, {'rows':[ ]});
     },
-    get: function(id, callback) {
+    getDoc: function(id, callback) {
       callback(null, doc1);
-    }
-  };
-  var nano = {
-    use: function() {
-      return db;
     },
-    request: function(options, callback) {
-      callback(null, {uuids: [docId2]});
+    client: {
+      uuids: function(count, callback) {
+        callback(null, {uuids: [docId2]});
+      }
     }
   };
-  var save = sinon.spy(db, 'bulk');
+  var save = sinon.spy(db, 'bulkDocs');
   var getView = sinon.spy(db, 'view');
-  var newUUID = sinon.spy(nano, 'request');
-  var audit = require('../../../couchdb-audit/node').withNano(nano, 'medic', 'test', user);
+  var newUUID = sinon.spy(db.client, 'uuids');
+  var audit = require('../../couchdb-audit/node').withFelix(db, user);
 
   audit.bulkSave([doc1, doc2, doc3], function(err, result) {
     test.equal(err, null);
@@ -593,20 +551,17 @@ exports['when audit fails, doc is not saved and error returned'] = function(test
   };
 
   var db = { 
-    bulk: function(options, callback) {
+    bulkDocs: function(options, callback) {
       callback(errMsg);
-    }
-  };
-  var nano = {
-    use: function() {
-      return db;
     },
-    request: function(options, callback) {
-      callback(null, {uuids: [docId]});
+    client: {
+      uuids: function(count, callback) {
+        callback(null, {uuids: [docId]});
+      }
     }
   };
-  var bulkSave = sinon.spy(db, 'bulk');
-  var audit = require('../../../couchdb-audit/node').withNano(nano, 'medic', 'test', user);
+  var bulkSave = sinon.spy(db, 'bulkDocs');
+  var audit = require('../../couchdb-audit/node').withFelix(db, user);
   audit.saveDoc(doc1, function(err, result) {
     test.equal(err, 'Failed saving audit record. ' + errMsg);
   });
@@ -630,13 +585,8 @@ exports['get returns the `audit_record` for the given `data_record`'] = function
       callback(null, {'rows':[ expected ]});
     }
   };
-  var nano = {
-    use: function() {
-      return db;
-    }
-  };
   var getView = sinon.spy(db, 'view');
-  var audit = require('../../../couchdb-audit/node').withNano(nano, 'medic', 'test', user);
+  var audit = require('../../couchdb-audit/node').withFelix(db, user);
   audit.get(docId, function(err, result) {
     test.equal(err, null);
     test.equal(result, expected);
@@ -667,21 +617,16 @@ exports['removeDoc updates the `audit_record` for the given `data_record`'] = fu
         }
       }]});
     },
-    bulk: function(options, callback) {
+    bulkDocs: function(options, callback) {
       callback(null);
     },
-    destroy: function(db, options, callback) {
+    removeDoc: function(db, options, callback) {
       callback(null);
     }
   };
-  var nano = {
-    use: function() {
-      return db;
-    }
-  };
-  var removeDoc = sinon.spy(db, 'destroy');
-  var bulkSave = sinon.spy(db, 'bulk');
-  var audit = require('../../../couchdb-audit/node').withNano(nano, 'medic', 'test', user);
+  var removeDoc = sinon.spy(db, 'removeDoc');
+  var bulkSave = sinon.spy(db, 'bulkDocs');
+  var audit = require('../../couchdb-audit/node').withFelix(db, user);
 
   audit.removeDoc(doc1, function(err) {
     test.equal(err, null);
