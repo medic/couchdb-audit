@@ -42,7 +42,7 @@ module.exports = {
               var record = findRecord(_doc, _records);
               if (!record) {
                 auditDoc = createAudit(_doc);
-                if (_doc._rev) {
+                if (_doc._rev && !isInitialRev(_doc)) {
                   // no existing audit, but existing revision - log current
                   db.getDoc(_doc._id, function(err, _oldDoc) {
                     if (err) {

@@ -359,15 +359,14 @@ exports['updating a `data_record` creates an `audit_record` if required'] = func
   test.expect(13);
 
   var docId = 123;
-  var rev1 = '1-XXXXXXX';
   var doc1 = {
     _id: docId,
-    _rev: rev1,
+    _rev: '1-XXXXXXX',
     type: 'data_record'
   };
   var doc2 = {
     _id: docId,
-    _rev: '1-XXXXXXX',
+    _rev: '2-XXXXXXX',
     type: 'data_record',
     foo: 'bar'
   };
@@ -411,7 +410,7 @@ exports['updating a `data_record` creates an `audit_record` if required'] = func
   test.equal(auditRecord.record_id, docId);
   test.equal(auditRecord.history.length, 2);
   test.equal(auditRecord.history[0].action, 'create');
-  test.equal(auditRecord.history[0].doc._rev, rev1);
+  test.equal(auditRecord.history[0].doc._rev, '2-XXXXXXX');
   test.equal(auditRecord.history[1].action, 'update');
   test.equal(auditRecord.history[1].doc._rev, 'current');
   test.equal(dataRecord, doc2);
@@ -501,7 +500,7 @@ exports['bulkSave creates `audit_record` docs when needed'] = function(test) {
   // doc with no audit record
   var doc1 = {
     _id: docId1,
-    _rev: '1-XXXXXXX',
+    _rev: '2-XXXXXXX',
     type: 'data_record',
     foo: 'baz'
   };
@@ -513,7 +512,7 @@ exports['bulkSave creates `audit_record` docs when needed'] = function(test) {
   // deleted doc
   var doc3 = {
     _id: docId3,
-    _rev: '1-XXXXXXX',
+    _rev: '3-XXXXXXX',
     type: 'data_record',
     foo: 'bar',
     _deleted: true
@@ -557,7 +556,7 @@ exports['bulkSave creates `audit_record` docs when needed'] = function(test) {
     test.equal(record.type, 'audit_record');
     if (record.record_id === docId1) {
       test.equal(record.history.length, 2);
-      test.equal(record.history[0].action, 'create');
+      test.equal(record.history[0].action, 'update');
       test.equal(record.history[0].doc._id, docId1);
       test.equal(record.history[1].action, 'update');
       test.equal(record.history[1].doc._id, docId1);
@@ -567,7 +566,7 @@ exports['bulkSave creates `audit_record` docs when needed'] = function(test) {
       test.equal(record.history[0].doc._id, docId2);
     } else if (record.record_id === docId3) {
       test.equal(record.history.length, 2);
-      test.equal(record.history[0].action, 'create');
+      test.equal(record.history[0].action, 'update');
       test.equal(record.history[0].doc._id, docId1);
       test.equal(record.history[1].action, 'delete');
       test.equal(record.history[1].doc._id, docId3);
