@@ -145,7 +145,7 @@ exports['when getView fails, doc is not saved and error returned'] = function(te
   };
   var audit = require('../../couchdb-audit/node').withFelix(db, user);
   audit.saveDoc(doc1, function(err, result) {
-    test.equal(err, 'Failed saving audit record. Failed retrieving existing audit logs. ' + errMsg);
+    test.equal(err, errMsg);
   });
 
   test.done();
@@ -563,7 +563,7 @@ exports['when audit fails, doc is not saved and error returned'] = function(test
   var bulkSave = sinon.spy(db, 'bulkDocs');
   var audit = require('../../couchdb-audit/node').withFelix(db, user);
   audit.saveDoc(doc1, function(err, result) {
-    test.equal(err, 'Failed saving audit record. ' + errMsg);
+    test.equal(err, errMsg);
   });
 
   test.equal(bulkSave.callCount, 1);

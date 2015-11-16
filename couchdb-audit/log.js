@@ -19,19 +19,19 @@ module.exports = {
 
       nameFn(function(err, userName) {
         if (err) {
-          return callback('Failed getting user name. ' + err);
+          return callback(err);
         }
 
         getAllRecords(docs, function(err, _records) {
           if (err) {
-            return callback('Failed retrieving existing audit logs. ' + err);
+            return callback(err);
           }
           var auditDoc;
           async.map(docs, function(_doc, _cb) {
             if (!_doc._id) {
               client.uuids(1, function(err, ids) {
                 if (err) {
-                  return _cb('Failed generating a new database ID. ' + err);
+                  return _cb(err);
                 }
                 _doc._id = ids.uuids[0];
                 auditDoc = createAudit(_doc);
@@ -46,7 +46,7 @@ module.exports = {
                   // no existing audit, but existing revision - log current
                   db.getDoc(_doc._id, function(err, _oldDoc) {
                     if (err) {
-                      return _cb('Failed retrieving existing document. ' + err);
+                      return _cb(err);
                     }
                     var action = isInitialRev(_oldDoc) ? 'create' : 'update';
                     appendHistory(auditDoc.history, action, null, _oldDoc);
@@ -166,7 +166,7 @@ module.exports = {
       saveDoc: function(doc, callback) {
         audit([doc], function(err) {
           if (err) {
-            return callback('Failed saving audit record. ' + err);
+            return callback(err);
           }
           db.saveDoc(doc, callback);
         });
@@ -188,7 +188,7 @@ module.exports = {
         }
         audit(docs, function(err) {
           if (err) {
-            return callback('Failed saving audit records. ' + err);
+            return callback(err);
           }
           options.docs = docs;
           db.bulkDocs(options, callback);
@@ -206,7 +206,7 @@ module.exports = {
       removeDoc: function(doc, callback) {
         audit([doc], 'delete', function(err) {
           if (err) {
-            return callback('Failed saving audit records. ' + err);
+            return callback(err);
           }
           db.removeDoc(doc._id, doc._rev, callback);
         });
