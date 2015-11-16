@@ -46,12 +46,14 @@ module.exports = {
                   // no existing audit, but existing revision - log current
                   db.getDoc(_doc._id, function(err, _oldDoc) {
                     if (err) {
-                      return _cb(err);
+                      // can't get existing doc, or doesn't exist. save audit anyway.
+                      appendHistory(auditDoc.history, 'create', userName, _doc);
+                    } else {
+                      var action = isInitialRev(_oldDoc) ? 'create' : 'update';
+                      appendHistory(auditDoc.history, action, null, _oldDoc);
+                      action = actionOverride || _doc._deleted ? 'delete' : 'update';
+                      appendHistory(auditDoc.history, action, userName, _doc);
                     }
-                    var action = isInitialRev(_oldDoc) ? 'create' : 'update';
-                    appendHistory(auditDoc.history, action, null, _oldDoc);
-                    action = actionOverride || _doc._deleted ? 'delete' : 'update';
-                    appendHistory(auditDoc.history, action, userName, _doc);
                     _cb(null, auditDoc);
                   });
                 } else {

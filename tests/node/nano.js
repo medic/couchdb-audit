@@ -303,8 +303,8 @@ exports['deleting a `data_record` updates the `audit_record`'] = function(test) 
     _deleted: true
   };
 
-  var db = { 
-    insert: function(doc, callback) { 
+  var db = {
+    insert: function(doc, callback) {
       callback(null, {id: docId});
     },
     bulk: function(options, callback) {
@@ -371,8 +371,8 @@ exports['updating a `data_record` creates an `audit_record` if required'] = func
     foo: 'bar'
   };
 
-  var db = { 
-    insert: function(doc, callback) { 
+  var db = {
+    insert: function(doc, callback) {
       callback(null, {id: docId});
     },
     bulk: function(options, callback) {
@@ -413,6 +413,66 @@ exports['updating a `data_record` creates an `audit_record` if required'] = func
   test.equal(auditRecord.history[0].doc._rev, '2-XXXXXXX');
   test.equal(auditRecord.history[1].action, 'update');
   test.equal(auditRecord.history[1].doc._rev, 'current');
+  test.equal(dataRecord, doc2);
+  test.done();
+};
+
+exports['updating a `data_record` creates an `audit_record` if required and handles missing doc'] = function(test) {
+  test.expect(11);
+
+  var docId = 123;
+  var doc1 = {
+    _id: docId,
+    _rev: '1-XXXXXXX',
+    type: 'data_record'
+  };
+  var doc2 = {
+    _id: docId,
+    _rev: '2-XXXXXXX',
+    type: 'data_record',
+    foo: 'bar'
+  };
+
+  var db = {
+    insert: function(doc, callback) {
+      callback(null, {id: docId});
+    },
+    bulk: function(options, callback) {
+      callback(null);
+    },
+    view: function(appname, view, query, callback) {
+      callback(null, {'rows':[]});
+    },
+    get: function(id, callback) {
+      callback(new Error('no existing doc'));
+    }
+  };
+  var nano = {
+    use: function() {
+      return db;
+    }
+  };
+  var saveDoc = sinon.spy(db, 'insert');
+  var bulkSave = sinon.spy(db, 'bulk');
+  var getView = sinon.spy(db, 'view');
+  var getDoc = sinon.spy(db, 'get');
+  var audit = require('../../couchdb-audit/node').withNano(nano, 'medic', 'test', user);
+
+  audit.saveDoc(doc2, function(err, result) {
+    test.equal(err, null);
+    test.equal(result.id, docId);
+  });
+
+  test.equal(getView.callCount, 1);
+  test.equal(saveDoc.callCount, 1);
+  test.equal(getDoc.callCount, 1);
+  var auditRecord = bulkSave.firstCall.args[0].docs[0];
+  var dataRecord = saveDoc.firstCall.args[0];
+  test.equal(auditRecord.type, 'audit_record');
+  test.equal(auditRecord.record_id, docId);
+  test.equal(auditRecord.history.length, 1);
+  test.equal(auditRecord.history[0].action, 'create');
+  test.equal(auditRecord.history[0].doc._rev, 'current');
   test.equal(dataRecord, doc2);
   test.done();
 };
