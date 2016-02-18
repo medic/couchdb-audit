@@ -6,7 +6,7 @@ module.exports = {
 
   /**
    * Sets up auditing to work with the kanso db module.
-   * 
+   *
    * @name withKanso(db)
    * @param {Object} db The kanso db instance to use.
    * @api public
@@ -36,7 +36,8 @@ module.exports = {
         });
       }
     };
-    return log.init(appname, clientWrapper, dbWrapper, function(callback) {
+    // TODO: support a different audit and docs dbs
+    return log.init(appname, clientWrapper, dbWrapper, dbWrapper, function(callback) {
       session.info(function(err, result) {
         if (err) {
           return callback(err);

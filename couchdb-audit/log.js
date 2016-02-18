@@ -6,11 +6,14 @@ module.exports = {
    *
    * @name init(appname, db, name)
    * @param {String} appname The name of the app.
-   * @param {Object} db The felix instance to use to persist.
+   * @param {Object} docsDb The db instance to use to persist standard documents.
+   * @param {Object} auditDb The db instance to use to persist audit documents.
+   *                 This can be the same as `docsDb`
    * @param {Function(err, name)} name Returns the username.
    * @api public
    */
-  init: function(appname, client, db, nameFn) {
+  init: function(appname, client, docsDb, auditDb, nameFn) {
+
     function audit(docs, actionOverride, callback) {
       if (!callback) {
         callback = actionOverride;
@@ -44,7 +47,7 @@ module.exports = {
                 auditDoc = createAudit(_doc);
                 if (_doc._rev && !isInitialRev(_doc)) {
                   // no existing audit, but existing revision - log current
-                  db.getDoc(_doc._id, function(err, _oldDoc) {
+                  docsDb.getDoc(_doc._id, function(err, _oldDoc) {
                     if (err) {
                       // can't get existing doc, or doesn't exist. save audit anyway.
                       appendHistory(auditDoc.history, 'create', userName, _doc);
@@ -73,7 +76,7 @@ module.exports = {
             if (err) {
               return callback(err);
             }
-            db.bulkDocs({docs: auditRecords}, callback);
+            auditDb.bulkDocs({docs: auditRecords}, callback);
           });
         });
       });
@@ -144,7 +147,7 @@ module.exports = {
       var keys = docIds.map(function(docId) {
         return [docId];
       });
-      db.view(appname, 'audit_records_by_doc', {
+      auditDb.view(appname, 'audit_records_by_doc', {
         include_docs: true,
         keys: keys
       }, function(err, result) {
@@ -170,7 +173,7 @@ module.exports = {
           if (err) {
             return callback(err);
           }
-          db.saveDoc(doc, callback);
+          docsDb.saveDoc(doc, callback);
         });
       },
 
@@ -193,7 +196,7 @@ module.exports = {
             return callback(err);
           }
           options.docs = docs;
-          db.bulkDocs(options, callback);
+          docsDb.bulkDocs(options, callback);
         });
       },
 
@@ -210,7 +213,7 @@ module.exports = {
           if (err) {
             return callback(err);
           }
-          db.removeDoc(doc._id, doc._rev, callback);
+          docsDb.removeDoc(doc._id, doc._rev, callback);
         });
       },
 

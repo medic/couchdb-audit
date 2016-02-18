@@ -18,7 +18,8 @@ module.exports = {
    * @api public
    */
   withFelix: function(felix, name) {
-    return log.init(felix.name, felix.client, felix, getNameFn(name));
+    // FIXME: support a different audit and docs db
+    return log.init(felix.name, felix.client, felix, felix, getNameFn(name));
   },
 
   /**
@@ -33,7 +34,8 @@ module.exports = {
    *    or a function to retrieve the name.
    * @api public
    */
-  withNano: function(nano, dbName, designName, authorName) {
+  // withNano: function(nano, dbName, designName, authorName) {
+  withNano: function(nano, dbName, auditDbName, designName, authorName) {
     // let calls fall through- only overwrite calls that need to be audited
     var db = nano.use(dbName);
     var dbWrapper = {
@@ -43,12 +45,21 @@ module.exports = {
       removeDoc: db.destroy,
       bulkDocs: db.bulk
     };
+
+    var auditDb = nano.use(auditDbName);
+    var auditDbWrapper = {
+      view: auditDb.view,
+      getDoc: auditDb.get,
+      saveDoc: auditDb.insert,
+      removeDoc: auditDb.destroy,
+      bulkDocs: auditDb.bulk
+    };
     var clientWrapper = {
       uuids: function(count, callback) {
         nano.request({ db: '_uuids', params: { count: count }}, callback);
       }
     };
-    return log.init(designName, clientWrapper, dbWrapper, getNameFn(authorName));
+    return log.init(designName, clientWrapper, dbWrapper, auditDbWrapper, getNameFn(authorName));
   }
 
 };
