@@ -13,13 +13,19 @@ module.exports = {
    *
    * @name withFelix(felix, name)
    * @param {Object} felix The felix instance to use to persist.
+   * @param {Object} felixAudit Optionally a different felix instance to use to persist audit data
    * @param {String|Function(err, name)} name Either the authors name,
    *    or a function to retrieve the name.
    * @api public
    */
-  withFelix: function(felix, name) {
-    // FIXME: support a different audit and docs db
-    return log.init(felix.name, felix.client, felix, felix, getNameFn(name));
+  // withFelix: function(felix, felixAudit, name) {
+  withFelix: function(felix, felixAudit, name) {
+    if (arguments.length === 2) {
+      name = arguments[1];
+      felixAudit = felix;
+    }
+
+    return log.init(felix.name, felix.client, felix, felixAudit, getNameFn(name));
   },
 
   /**
@@ -29,13 +35,19 @@ module.exports = {
    * @name withNano(nano, name)
    * @param {Object} nano The nano instance to use to persist.
    * @param {String} dbName The name of the db to use.
+   * @param {String} auditDbName Optionally a different db for persisting audit data.
    * @param {String} designName The name of the design to use.
    * @param {String|Function(err, name)} authorName Either the authors name,
    *    or a function to retrieve the name.
    * @api public
    */
-  // withNano: function(nano, dbName, designName, authorName) {
   withNano: function(nano, dbName, auditDbName, designName, authorName) {
+    if (arguments.length === 4) {
+      authorName = arguments[3];
+      designName = arguments[2];
+      auditDbName = dbName;
+    }
+
     // let calls fall through- only overwrite calls that need to be audited
     var db = nano.use(dbName);
     var dbWrapper = {
