@@ -19,12 +19,20 @@ An npm and Kanso module for auditing changes to couchdb documents.
 * `designName`: the name of the design document to use
 * `user`: a String or callback which fetches the username
 
+You can also optionally pass in a separate db name for storing and retrieving audit documents.
+
+```var audit = require('couchdb-audit').withNano(db, dbName, auditDbName, designName, user)```
+
 #### Felix
 
 ```var audit = require('couchdb-audit').withFelix(db, user)```
 
 * `db`: a [Felix CouchDB](https://github.com/felixge/node-couchdb) module
 * `user`: a String or callback which fetches the username
+
+You can also optionally pass in a separate db name for storing and retrieving audit documents.
+
+```var audit = require('couchdb-audit').withFelix(db, auditDb, user)```
 
 ## Kanso
 
@@ -37,6 +45,10 @@ Include `"couchdb-audit": null` in your kanso.json.
 ```var audit = require('couchdb-audit/kanso').withKanso(db)```
 
 Where `db` is a [Kanso DB](https://github.com/kanso/db) module.
+
+You can also optionally pass in a separate db name for storing and retrieving audit documents.
+
+```var audit = require('couchdb-audit/kanso').withKanso(db, auditDb)```
 
 ## Usage
 
