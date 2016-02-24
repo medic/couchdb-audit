@@ -18,10 +18,9 @@ module.exports = {
    *    or a function to retrieve the name.
    * @api public
    */
-  // withFelix: function(felix, felixAudit, name) {
   withFelix: function(felix, felixAudit, name) {
     if (arguments.length === 2) {
-      name = arguments[1];
+      name = felixAudit;
       felixAudit = felix;
     }
 
@@ -43,8 +42,8 @@ module.exports = {
    */
   withNano: function(nano, dbName, auditDbName, designName, authorName) {
     if (arguments.length === 4) {
-      authorName = arguments[3];
-      designName = arguments[2];
+      authorName = designName;
+      designName = auditDbName;
       auditDbName = dbName;
     }
 
