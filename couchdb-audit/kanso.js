@@ -2,17 +2,8 @@ var log = require('couchdb-audit/log'),
     appname = require('settings/root').name,
     session = require('session');
 
-module.exports = {
-
-  /**
-   * Sets up auditing to work with the kanso db module.
-   * 
-   * @name withKanso(db)
-   * @param {Object} db The kanso db instance to use.
-   * @api public
-   */
-  withKanso: function(db) {
-    var dbWrapper = {
+var getDbWrapper = function(db) {
+  return {
       view: function(design, view, query, callback) {
         db.getView.call(db, design, view, query, callback);
       },
@@ -29,6 +20,27 @@ module.exports = {
         db.bulkSave.call(db, options.docs, options, callback);
       }
     };
+};
+
+module.exports = {
+
+  /**
+   * Sets up auditing to work with the kanso db module.
+   *
+   * @name withKanso(db)
+   * @param {Object} db The kanso db instance to use.
+   * @param {Object} auditDb Optionally the kanso db instance to use for auditing.
+   * @api public
+   */
+  withKanso: function(db, auditDb) {
+    var dbWrapper = getDbWrapper(db);
+    var auditDbWrapper;
+    if (auditDb) {
+      auditDbWrapper = getDbWrapper(auditDb);
+    } else {
+      auditDbWrapper = dbWrapper;
+    }
+
     var clientWrapper = {
       uuids: function(count, callback) {
         db.newUUID.call(db, 100, function(err, id) {
@@ -36,7 +48,8 @@ module.exports = {
         });
       }
     };
-    return log.init(appname, clientWrapper, dbWrapper, function(callback) {
+
+    return log.init(appname, clientWrapper, dbWrapper, auditDbWrapper, function(callback) {
       session.info(function(err, result) {
         if (err) {
           return callback(err);
