@@ -13,6 +13,8 @@ exports['saving a new `data_record` creates a new `audit_record`'] = function(te
   
   var userName = 'John Key';
   var docId = 123;
+  var auditId = docId + '-audit';
+
   var doc1 = {
     _id: undefined,
     _rev: undefined,
@@ -52,7 +54,7 @@ exports['saving a new `data_record` creates a new `audit_record`'] = function(te
   var auditRecord = bulkSave.firstCall.args[0];
   var dataRecord = saveDoc.firstCall.args[0];
   test.equal(auditRecord[0].type, 'audit_record');
-  test.equal(auditRecord[0]._id, docId);
+  test.equal(auditRecord[0]._id, auditId);
   test.equal(auditRecord[0].history.length, 1);
   test.equal(auditRecord[0].history[0].action, 'create');
   test.equal(auditRecord[0].history[0].user, userName);
@@ -70,6 +72,7 @@ exports['saving a new `data_record` with id set creates a new `audit_record`'] =
   
   var userName = 'John Key';
   var docId = '251849';
+  var auditId = docId + '-audit';
   var doc1 = {
     _id: docId,
     _rev: undefined,
@@ -109,7 +112,7 @@ exports['saving a new `data_record` with id set creates a new `audit_record`'] =
   var auditRecord = bulkSave.firstCall.args[0];
   var dataRecord = saveDoc.firstCall.args[0];
   test.equal(auditRecord[0].type, 'audit_record');
-  test.equal(auditRecord[0]._id, docId);
+  test.equal(auditRecord[0]._id, auditId);
   test.equal(auditRecord[0].history.length, 1);
   test.equal(auditRecord[0].history[0].action, 'create');
   test.equal(auditRecord[0].history[0].user, userName);
@@ -124,6 +127,7 @@ exports['updating a `data_record` updates the `audit_record`'] = function(test) 
   test.expect(17);
 
   var docId = 123;
+  var auditId = docId + '-audit';
   var user1 = 'joe';
   var rev1 = '1-ASD';
   var doc1 = {
@@ -178,7 +182,7 @@ exports['updating a `data_record` updates the `audit_record`'] = function(test) 
   var auditRecord = bulkSave.firstCall.args[0];
   var dataRecord = saveDoc.firstCall.args[0];
   test.equal(auditRecord[0].type, 'audit_record');
-  test.equal(auditRecord[0]._id, docId);
+  test.equal(auditRecord[0]._id, auditId);
   test.equal(auditRecord[0].history.length, 2);
   test.equal(auditRecord[0].history[0].action, 'create');
   test.equal(auditRecord[0].history[0].user, user1);
@@ -196,6 +200,7 @@ exports['deleting a `data_record` updates the `audit_record`'] = function(test) 
   test.expect(15);
 
   var docId = 123;
+  var auditId = docId + '-audit';
   var user1 = 'admin';
   var doc1 = {
     _id: docId,
@@ -217,10 +222,10 @@ exports['deleting a `data_record` updates the `audit_record`'] = function(test) 
     },
     allDocs: function(query, callback) {
       callback(null, {'rows':[{
-        id: docId,
+        id: auditId,
         doc: {
           type: 'audit_record',
-          _id: docId,
+          _id: auditId,
           history: [{ action: 'create', user: user1, doc: doc1 }]
         }
       }]});
@@ -247,7 +252,7 @@ exports['deleting a `data_record` updates the `audit_record`'] = function(test) 
   var auditRecord = bulkSave.firstCall.args[0];
   var dataRecord = saveDoc.firstCall.args[0];
   test.equal(auditRecord[0].type, 'audit_record');
-  test.equal(auditRecord[0]._id, docId);
+  test.equal(auditRecord[0]._id, auditId);
   test.equal(auditRecord[0].history.length, 2);
   test.equal(auditRecord[0].history[0].action, 'create');
   test.equal(auditRecord[0].history[0].user, user1);
@@ -263,6 +268,7 @@ exports['updating a `data_record` creates an `audit_record` if required'] = func
   test.expect(13);
 
   var docId = 123;
+  var auditId = docId + '-audit';
   var rev1 = '1-XXXXXXX';
   var doc1 = {
     _id: docId,
@@ -312,7 +318,7 @@ exports['updating a `data_record` creates an `audit_record` if required'] = func
   var auditRecord = bulkSave.firstCall.args[0];
   var dataRecord = saveDoc.firstCall.args[0];
   test.equal(auditRecord[0].type, 'audit_record');
-  test.equal(auditRecord[0]._id, docId);
+  test.equal(auditRecord[0]._id, auditId);
   test.equal(auditRecord[0].history.length, 2);
   test.equal(auditRecord[0].history[0].action, 'create');
   test.equal(auditRecord[0].history[0].doc._rev, rev1);
@@ -327,6 +333,8 @@ exports['bulkSave updates all relevant `audit_record` docs'] = function(test) {
 
   var docId1 = 123;
   var docId2 = 456;
+  var auditId1 = docId1 + '-audit';
+  var auditId2 = docId2 + '-audit';
   var doc1 = {
     _id: docId1,
     type: 'data_record',
@@ -344,17 +352,17 @@ exports['bulkSave updates all relevant `audit_record` docs'] = function(test) {
     },
     allDocs: function(query, callback) {
       callback(null, {'rows':[{
-        id: docId1,
+        id: auditId1,
         doc: {
           type: 'audit_record',
-          _id: docId1,
+          _id: auditId1,
           history: [{ action: 'create', doc: doc1 }]
         }
       }, {
-        id: docId2,
+        id: auditId2,
         doc: {
           type: 'audit_record',
-          _id: docId2,
+          _id: auditId2,
           history: [{ action: 'create', doc: doc2 }]
         }
       }]});
@@ -381,9 +389,9 @@ exports['bulkSave updates all relevant `audit_record` docs'] = function(test) {
     test.equal(record.type, 'audit_record');
     test.equal(record.history.length, 2);
     test.equal(record.history[1].action, 'update');
-    if (record._id === docId1) {
+    if (record._id === auditId1) {
       test.equal(record.history[0].doc, doc1);
-    } else if (record._id === docId2) {
+    } else if (record._id === auditId2) {
       test.equal(record.history[0].doc, doc2);
     } else {
       test.ok(false, 'Unexpected _id');
@@ -400,6 +408,9 @@ exports['bulkSave creates `audit_record` docs when needed'] = function(test) {
   var docId1 = 123;
   var docId2 = 456;
   var docId3 = 789;
+  var auditId1 = docId1 + '-audit';
+  var auditId2 = docId2 + '-audit';
+  var auditId3 = docId3 + '-audit';
 
   // doc with no audit record
   var doc1 = {
@@ -458,17 +469,17 @@ exports['bulkSave creates `audit_record` docs when needed'] = function(test) {
   test.equal(auditRecord.length, 3);
   auditRecord.forEach(function(record) {
     test.equal(record.type, 'audit_record');
-    if (record._id === docId1) {
+    if (record._id === auditId1) {
       test.equal(record.history.length, 2);
       test.equal(record.history[0].action, 'create');
       test.equal(record.history[0].doc._id, docId1);
       test.equal(record.history[1].action, 'update');
       test.equal(record.history[1].doc._id, docId1);
-    } else if (record._id === docId2) {
+    } else if (record._id === auditId2) {
       test.equal(record.history.length, 1);
       test.equal(record.history[0].action, 'create');
       test.equal(record.history[0].doc._id, docId2);
-    } else if (record._id === docId3) {
+    } else if (record._id === auditId3) {
       test.equal(record.history.length, 2);
       test.equal(record.history[0].action, 'create');
       test.equal(record.history[0].doc._id, docId1);
@@ -549,6 +560,7 @@ exports['removeDoc updates the `audit_record` for the given `data_record`'] = fu
   var user1 = 'creator';
   var user2 = 'destroyer';
   var docId = 123;
+  var auditId = docId + '-audit';
   var doc1 = {
     _id: docId,
     _rev: '1-XXXXXXX',
@@ -558,10 +570,10 @@ exports['removeDoc updates the `audit_record` for the given `data_record`'] = fu
   var db = {
     allDocs: function(query, callback) {
       callback(null, {'rows':[{
-        id: docId,
+        id: auditId,
         doc: {
           type: 'audit_record',
-          _id: docId,
+          _id: auditId,
           history: [{ action: 'create', user: user1, doc: doc1 }]
         }
       }]});
@@ -592,7 +604,7 @@ exports['removeDoc updates the `audit_record` for the given `data_record`'] = fu
   var auditRecord = bulkSave.firstCall.args[0];
   var dataRecord = removeDoc.firstCall.args[0];
   test.equal(auditRecord[0].type, 'audit_record');
-  test.equal(auditRecord[0]._id, docId);
+  test.equal(auditRecord[0]._id, auditId);
   test.equal(auditRecord[0].history.length, 2);
   test.equal(auditRecord[0].history[0].action, 'create');
   test.equal(auditRecord[0].history[0].user, user1);
