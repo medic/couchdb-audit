@@ -83,8 +83,9 @@ module.exports = {
     }
 
     function findRecord(doc, records) {
+      var auditId = getAuditId(doc._id);
       for (var i = 0; i < records.length; i++) {
-        if (records[i].key[0] === doc._id) {
+        if (records[i].id === auditId) {
           return records[i];
         }
       }
@@ -117,8 +118,8 @@ module.exports = {
 
     function createAudit(record) {
       return {
+        _id: getAuditId(record._id),
         type: 'audit_record',
-        record_id: record._id,
         history: []
       };
     }
@@ -139,23 +140,22 @@ module.exports = {
 
     function get(docId, callback) {
       getAll([docId], function(err, result) {
-        callback(err, result && result[0]);
+        callback(err, result && result.length && result[0]);
       });
     }
 
     function getAll(docIds, callback) {
-      var keys = docIds.map(function(docId) {
-        return [docId];
-      });
-      auditDb.view(appname, 'audit_records_by_doc', {
-        include_docs: true,
-        keys: keys
-      }, function(err, result) {
+      var ids = docIds.map(getAuditId);
+      auditDb.allDocs({ include_docs: true, keys: ids }, function(err, result) {
         if (err) {
           return callback(err);
         }
         callback(null, result.rows);
       });
+    }
+
+    function getAuditId(docId) {
+      return docId + '-audit';
     }
 
     return {

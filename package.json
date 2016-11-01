@@ -3,19 +3,19 @@
   "description": "An npm and Kanso module for auditing changes to CouchDB documents",
   "main": "./couchdb-audit/node",
   "author": "Gareth Bowen <gareth@bowenwebdesign.co.nz>",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "scripts": {
     "test": "nodeunit tests/node"
   },
   "dependencies": {
-    "async": "~0.9.0"
+    "async": "^2.1.2"
   },
   "devDependencies": {
-    "grunt": "^0.4.5",
-    "grunt-contrib-jshint": "^0.11.0",
-    "grunt-contrib-nodeunit": "^0.4.1",
+    "grunt": "^1.0.1",
+    "grunt-contrib-jshint": "^1.0.0",
+    "grunt-contrib-nodeunit": "^1.0.0",
     "nodeunit": "latest",
-    "sinon": "~1.14.0"
+    "sinon": "^1.17.6"
   },
   "repository": {
     "type": "git",

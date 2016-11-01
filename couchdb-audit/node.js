@@ -50,7 +50,7 @@ module.exports = {
     // let calls fall through- only overwrite calls that need to be audited
     var db = nano.use(dbName);
     var dbWrapper = {
-      view: db.view,
+      allDocs: db.list,
       getDoc: db.get,
       saveDoc: db.insert,
       removeDoc: db.destroy,
@@ -59,7 +59,7 @@ module.exports = {
 
     var auditDb = nano.use(auditDbName);
     var auditDbWrapper = {
-      view: auditDb.view,
+      allDocs: auditDb.list,
       getDoc: auditDb.get,
       saveDoc: auditDb.insert,
       removeDoc: auditDb.destroy,

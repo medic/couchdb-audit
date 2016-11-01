@@ -4,22 +4,22 @@ var log = require('couchdb-audit/log'),
 
 var getDbWrapper = function(db) {
   return {
-      view: function(design, view, query, callback) {
-        db.getView.call(db, design, view, query, callback);
-      },
-      getDoc: function(id, callback) {
-        db.getDoc.call(db, id, callback);
-      },
-      saveDoc: function(doc, callback) {
-        db.saveDoc.call(db, doc, callback);
-      },
-      removeDoc: function(id, rev, callback) {
-        db.removeDoc.call(db, { _id: id, _rev: rev }, callback);
-      },
-      bulkDocs: function(options, callback) {
-        db.bulkSave.call(db, options.docs, options, callback);
-      }
-    };
+    allDocs: function(query, callback) {
+      db.allDocs.call(query, callback);
+    },
+    getDoc: function(id, callback) {
+      db.getDoc.call(db, id, callback);
+    },
+    saveDoc: function(doc, callback) {
+      db.saveDoc.call(db, doc, callback);
+    },
+    removeDoc: function(id, rev, callback) {
+      db.removeDoc.call(db, { _id: id, _rev: rev }, callback);
+    },
+    bulkDocs: function(options, callback) {
+      db.bulkSave.call(db, options.docs, options, callback);
+    }
+  };
 };
 
 module.exports = {
