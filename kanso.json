@@ -1,9 +1,8 @@
 {
     "name": "couchdb-audit",
-    "version": "0.3.0",
+    "version": "1.0.0",
     "description": "For auditing changes to couchdb documents",
     "modules": ["couchdb-audit", "tests"],
-    "load": "couchdb-audit/app",
     "dependencies": {
         "settings": null,
         "session": null,

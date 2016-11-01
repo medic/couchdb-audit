@@ -2,7 +2,7 @@ var sinon = require('sinon'),
   user = 'someuser';
 
 exports['bulkSave works with felix couchdb node module'] = function(test) {
-  test.expect(18);
+  test.expect(16);
 
   var name = 'test';
   var docId1 = 123;
@@ -23,18 +23,16 @@ exports['bulkSave works with felix couchdb node module'] = function(test) {
     bulkDocs: function(options, callback) {
       callback(null);
     },
-    view: function(appname, view, query, callback) {
-      test.equal(name, appname);
-      test.deepEqual(query.keys, [[docId1], [docId2]]);
+    allDocs: function(query, callback) {
       callback(null, {"rows":[{
-        key: [docId1],
+        id: docId1,
         doc: {
           type: 'audit_record',
           record_id: docId1,
           history: [{ action: 'create', doc: doc1 }]
         }
       }, {
-        key: [docId2],
+        id: docId2,
         doc: {
           type: 'audit_record',
           record_id: docId2,
@@ -44,14 +42,14 @@ exports['bulkSave works with felix couchdb node module'] = function(test) {
     }
   };
   var save = sinon.spy(db, 'bulkDocs');
-  var getView = sinon.spy(db, 'view');
+  var allDocs = sinon.spy(db, 'allDocs');
   var audit = require('../../couchdb-audit/node').withFelix(db, user);
 
   audit.bulkSave([doc1, doc2], {all_or_nothing: true}, function(err, result) {
     test.equal(err, null);
   });
 
-  test.equal(getView.callCount, 1);
+  test.equal(allDocs.callCount, 1);
   test.equal(save.callCount, 2);
   var auditRecord = save.firstCall.args[0].docs;
   
@@ -116,7 +114,7 @@ exports['saving a new `data_record` creates a new `audit_record`'] = function(te
   var auditRecord = bulkSave.firstCall.args[0].docs[0];
   var dataRecord = saveDoc.firstCall.args[0];
   test.equal(auditRecord.type, 'audit_record');
-  test.equal(auditRecord.record_id, docId);
+  test.equal(auditRecord._id, docId);
   test.equal(auditRecord.history.length, 1);
   test.equal(auditRecord.history[0].action, 'create');
   test.equal(auditRecord.history[0].user, user);
@@ -129,7 +127,7 @@ exports['saving a new `data_record` creates a new `audit_record`'] = function(te
 
 };
 
-exports['when getView fails, doc is not saved and error returned'] = function(test) {
+exports['when allDocs fails, doc is not saved and error returned'] = function(test) {
   test.expect(1);
 
   var errMsg = 'ERR1';
@@ -139,7 +137,7 @@ exports['when getView fails, doc is not saved and error returned'] = function(te
   };
 
   var db = {
-    view: function(appname, view, query, callback) {
+    allDocs: function(query, callback) {
       callback(errMsg);
     }
   };
@@ -168,13 +166,13 @@ exports['saving a new `data_record` with id set creates a new `audit_record`'] =
     bulkDocs: function(options, callback) {
       callback(null);
     },
-    view: function(appname, view, query, callback) {
+    allDocs: function(query, callback) {
       callback(null, {'rows':[]});
     }
   };
   var saveDoc = sinon.spy(db, 'saveDoc');
   var bulkSave = sinon.spy(db, 'bulkDocs');
-  var getView = sinon.spy(db, 'view');
+  var allDocs = sinon.spy(db, 'allDocs');
   var audit = require('../../couchdb-audit/node').withFelix(db, user);
 
   audit.saveDoc(doc1, function(err, result) {
@@ -184,11 +182,11 @@ exports['saving a new `data_record` with id set creates a new `audit_record`'] =
 
   test.equal(bulkSave.callCount, 1);
   test.equal(saveDoc.callCount, 1);
-  test.equal(getView.callCount, 1);
+  test.equal(allDocs.callCount, 1);
   var auditRecord = bulkSave.firstCall.args[0].docs[0];
   var dataRecord = saveDoc.firstCall.args[0];
   test.equal(auditRecord.type, 'audit_record');
-  test.equal(auditRecord.record_id, docId);
+  test.equal(auditRecord._id, docId);
   test.equal(auditRecord.history.length, 1);
   test.equal(auditRecord.history[0].action, 'create');
   test.equal(auditRecord.history[0].user, user);
@@ -223,13 +221,13 @@ exports['updating a `data_record` updates the `audit_record`'] = function(test) 
     bulkDocs: function(options, callback) {
       callback(null);
     },
-    view: function(appname, view, query, callback) {
-      test.deepEqual(query.keys, [[docId]]);
+    allDocs: function(query, callback) {
+      test.deepEqual(query.keys, [ docId ]);
       callback(null, {"rows":[{
-        key: [docId],
+        id: docId,
         doc: {
+          _id: docId,
           type: 'audit_record',
-          record_id: docId,
           history: [{ action: 'create', user: user, doc: doc1 }]
         }
       }]});
@@ -237,7 +235,7 @@ exports['updating a `data_record` updates the `audit_record`'] = function(test) 
   };
   var saveDoc = sinon.spy(db, 'saveDoc');
   var bulkSave = sinon.spy(db, 'bulkDocs');
-  var getView = sinon.spy(db, 'view');
+  var allDocs = sinon.spy(db, 'allDocs');
   var audit = require('../../couchdb-audit/node').withFelix(db, user);
 
   audit.saveDoc(doc2, function(err, result) {
@@ -245,13 +243,13 @@ exports['updating a `data_record` updates the `audit_record`'] = function(test) 
     test.equal(result.id, docId);
   });
 
-  test.equal(getView.callCount, 1);
+  test.equal(allDocs.callCount, 1);
   test.equal(saveDoc.callCount, 1);
   test.equal(bulkSave.callCount, 1);
   var auditRecord = bulkSave.firstCall.args[0].docs[0];
   var dataRecord = saveDoc.firstCall.args[0];
   test.equal(auditRecord.type, 'audit_record');
-  test.equal(auditRecord.record_id, docId);
+  test.equal(auditRecord._id, docId);
   test.equal(auditRecord.history.length, 2);
   test.equal(auditRecord.history[0].action, 'create');
   test.equal(auditRecord.history[0].user, user);
@@ -286,13 +284,13 @@ exports['deleting a `data_record` updates the `audit_record`'] = function(test) 
     bulkDocs: function(options, callback) {
       callback(null);
     },
-    view: function(appname, view, query, callback) {
-      test.deepEqual(query.keys, [[docId]]);
+    allDocs: function(query, callback) {
+      test.deepEqual(query.keys, [ docId ]);
       callback(null, {"rows":[{
-        key: [docId],
+        id: docId,
         doc: {
+          _id: docId,
           type: 'audit_record',
-          record_id: docId,
           history: [{ action: 'create', user: user, doc: doc1 }]
         }
       }]});
@@ -300,7 +298,7 @@ exports['deleting a `data_record` updates the `audit_record`'] = function(test) 
   };
   var saveDoc = sinon.spy(db, 'saveDoc');
   var bulkSave = sinon.spy(db, 'bulkDocs');
-  var getView = sinon.spy(db, 'view');
+  var allDocs = sinon.spy(db, 'allDocs');
   var audit = require('../../couchdb-audit/node').withFelix(db, user);
 
   audit.saveDoc(doc2, function(err, result) {
@@ -308,13 +306,13 @@ exports['deleting a `data_record` updates the `audit_record`'] = function(test) 
     test.equal(result.id, docId);
   });
 
-  test.equal(getView.callCount, 1);
+  test.equal(allDocs.callCount, 1);
   test.equal(saveDoc.callCount, 1);
   test.equal(bulkSave.callCount, 1);
   var auditRecord = bulkSave.firstCall.args[0].docs[0];
   var dataRecord = saveDoc.firstCall.args[0];
   test.equal(auditRecord.type, 'audit_record');
-  test.equal(auditRecord.record_id, docId);
+  test.equal(auditRecord._id, docId);
   test.equal(auditRecord.history.length, 2);
   test.equal(auditRecord.history[0].action, 'create');
   test.equal(auditRecord.history[0].user, user);
@@ -349,7 +347,7 @@ exports['updating a `data_record` creates an `audit_record` if required'] = func
     bulkDocs: function(options, callback) {
       callback(null);
     },
-    view: function(appname, view, query, callback) {
+    allDocs: function(query, callback) {
       callback(null, {'rows':[]});
     },
     getDoc: function(id, callback) {
@@ -358,7 +356,7 @@ exports['updating a `data_record` creates an `audit_record` if required'] = func
   };
   var saveDoc = sinon.spy(db, 'saveDoc');
   var bulkSave = sinon.spy(db, 'bulkDocs');
-  var getView = sinon.spy(db, 'view');
+  var allDocs = sinon.spy(db, 'allDocs');
   var getDoc = sinon.spy(db, 'getDoc');
   var audit = require('../../couchdb-audit/node').withFelix(db, user);
 
@@ -368,13 +366,13 @@ exports['updating a `data_record` creates an `audit_record` if required'] = func
   });
 
 
-  test.equal(getView.callCount, 1);
+  test.equal(allDocs.callCount, 1);
   test.equal(saveDoc.callCount, 1);
   test.equal(getDoc.callCount, 1);
   var auditRecord = bulkSave.firstCall.args[0].docs[0];
   var dataRecord = saveDoc.firstCall.args[0];
   test.equal(auditRecord.type, 'audit_record');
-  test.equal(auditRecord.record_id, docId);
+  test.equal(auditRecord._id, docId);
   test.equal(auditRecord.history.length, 2);
   test.equal(auditRecord.history[0].action, 'create');
   test.equal(auditRecord.history[0].doc._rev, '2-XXXXXXX');
@@ -404,34 +402,34 @@ exports['bulkSave updates all relevant `audit_record` docs'] = function(test) {
     bulkDocs: function(options, callback) {
       callback(null);
     },
-    view: function(appname, view, query, callback) {
-      test.deepEqual(query.keys, [[docId1], [docId2]]);
+    allDocs: function(query, callback) {
+      test.deepEqual(query.keys, [ docId1, docId2 ]);
       callback(null, {"rows":[{
-        key: [docId1],
+        id: docId1,
         doc: {
+          _id: docId1,
           type: 'audit_record',
-          record_id: docId1,
           history: [{ action: 'create', doc: doc1 }]
         }
       }, {
-        key: [docId2],
+        id: docId2,
         doc: {
+          _id: docId2,
           type: 'audit_record',
-          record_id: docId2,
           history: [{ action: 'create', doc: doc2 }]
         }
       }]});
     }
   };
   var save = sinon.spy(db, 'bulkDocs');
-  var getView = sinon.spy(db, 'view');
+  var allDocs = sinon.spy(db, 'allDocs');
   var audit = require('../../couchdb-audit/node').withFelix(db, user);
 
   audit.bulkSave([doc1, doc2], {all_or_nothing: true}, function(err, result) {
     test.equal(err, null);
   });
 
-  test.equal(getView.callCount, 1);
+  test.equal(allDocs.callCount, 1);
   test.equal(save.callCount, 2);
   var auditRecord = save.firstCall.args[0].docs;
   var dataRecord = save.secondCall.args[0].docs;
@@ -439,12 +437,12 @@ exports['bulkSave updates all relevant `audit_record` docs'] = function(test) {
     test.equal(record.type, 'audit_record');
     test.equal(record.history.length, 2);
     test.equal(record.history[1].action, 'update');
-    if (record.record_id === docId1) {
+    if (record._id === docId1) {
       test.equal(record.history[0].doc, doc1);
-    } else if (record.record_id === docId2) {
+    } else if (record._id === docId2) {
       test.equal(record.history[0].doc, doc2);
     } else {
-      test.ok(false, 'Unexpected record_id');
+      test.ok(false, 'Unexpected _id');
     }
   });
   test.equal(dataRecord[0], doc1);
@@ -484,7 +482,7 @@ exports['bulkSave creates `audit_record` docs when needed'] = function(test) {
     bulkDocs: function(options, callback) {
       callback(null);
     },
-    view: function(appname, view, query, callback) {
+    allDocs: function(query, callback) {
       callback(null, {'rows':[ ]});
     },
     getDoc: function(id, callback) {
@@ -497,7 +495,7 @@ exports['bulkSave creates `audit_record` docs when needed'] = function(test) {
     }
   };
   var save = sinon.spy(db, 'bulkDocs');
-  var getView = sinon.spy(db, 'view');
+  var allDocs = sinon.spy(db, 'allDocs');
   var newUUID = sinon.spy(db.client, 'uuids');
   var audit = require('../../couchdb-audit/node').withFelix(db, user);
 
@@ -505,7 +503,7 @@ exports['bulkSave creates `audit_record` docs when needed'] = function(test) {
     test.equal(err, null);
   });
 
-  test.equal(getView.callCount, 1);
+  test.equal(allDocs.callCount, 1);
   test.equal(save.callCount, 2);
   test.equal(newUUID.callCount, 1);
   var auditRecord = save.firstCall.args[0].docs;
@@ -513,24 +511,24 @@ exports['bulkSave creates `audit_record` docs when needed'] = function(test) {
   test.equal(auditRecord.length, 3);
   auditRecord.forEach(function(record) {
     test.equal(record.type, 'audit_record');
-    if (record.record_id === docId1) {
+    if (record._id === docId1) {
       test.equal(record.history.length, 2);
       test.equal(record.history[0].action, 'update');
       test.equal(record.history[0].doc._id, docId1);
       test.equal(record.history[1].action, 'update');
       test.equal(record.history[1].doc._id, docId1);
-    } else if (record.record_id === docId2) {
+    } else if (record._id === docId2) {
       test.equal(record.history.length, 1);
       test.equal(record.history[0].action, 'create');
       test.equal(record.history[0].doc._id, docId2);
-    } else if (record.record_id === docId3) {
+    } else if (record._id === docId3) {
       test.equal(record.history.length, 2);
       test.equal(record.history[0].action, 'update');
       test.equal(record.history[0].doc._id, docId1);
       test.equal(record.history[1].action, 'delete');
       test.equal(record.history[1].doc._id, docId3);
     } else {
-      test.ok(false, 'Unexpected record_id');
+      test.ok(false, 'Unexpected _id');
     }
   });
   test.equal(dataRecord.length, 3);
@@ -576,16 +574,16 @@ exports['get returns the `audit_record` for the given `data_record`'] = function
   var docId = 123;
   var expected = {
     doc: {
-      record_id: docId
+      _id: docId
     }
   };
   
   var db = {
-    view: function(appname, view, query, callback) {
+    allDocs: function(query, callback) {
       callback(null, {'rows':[ expected ]});
     }
   };
-  var getView = sinon.spy(db, 'view');
+  var allDocs = sinon.spy(db, 'allDocs');
   var audit = require('../../couchdb-audit/node').withFelix(db, user);
   audit.get(docId, function(err, result) {
     test.equal(err, null);
@@ -606,13 +604,13 @@ exports['removeDoc updates the `audit_record` for the given `data_record`'] = fu
   };
 
   var db = {
-    view: function(appname, view, query, callback) {
-      test.deepEqual(query.keys, [[docId]]);
+    allDocs: function(query, callback) {
+      test.deepEqual(query.keys, [ docId ]);
       callback(null, {"rows":[{
-        key: [docId],
+        id: docId,
         doc: {
+          _id: docId,
           type: 'audit_record',
-          record_id: docId,
           history: [{ action: 'create', user: user, doc: doc1 }]
         }
       }]});
@@ -637,7 +635,7 @@ exports['removeDoc updates the `audit_record` for the given `data_record`'] = fu
   var auditRecord = bulkSave.firstCall.args[0].docs[0];
   var dataRecord = removeDoc.firstCall.args[0];
   test.equal(auditRecord.type, 'audit_record');
-  test.equal(auditRecord.record_id, docId);
+  test.equal(auditRecord._id, docId);
   test.equal(auditRecord.history.length, 2);
   test.equal(auditRecord.history[0].action, 'create');
   test.equal(auditRecord.history[0].user, user);
