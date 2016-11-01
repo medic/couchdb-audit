@@ -11,8 +11,7 @@ module.exports = function(grunt) {
       options: {
         ignores: [
           'node_modules/**'
-        ],
-        reporterOutput: ''
+        ]
       },
       all: [
         '**/*.js'
