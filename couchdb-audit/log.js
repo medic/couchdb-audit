@@ -76,7 +76,7 @@ module.exports = {
             if (err) {
               return callback(err);
             }
-            auditDb.bulkDocs({docs: auditRecords}, callback);
+            bulkDocs(auditRecords, callback);
           });
         });
       });
@@ -95,7 +95,7 @@ module.exports = {
       var ids = [];
       docs.forEach(function(_doc) {
         if (_doc._id) {
-          ids.push(_doc._id);
+          ids.push(getAuditId(_doc._id));
         }
       });
       if (!ids.length) {
@@ -139,18 +139,44 @@ module.exports = {
     }
 
     function get(docId, callback) {
-      getAll([docId], function(err, result) {
+      getAll([getAuditId(docId)], function(err, result) {
         callback(err, result && result.length && result[0]);
       });
     }
 
-    function getAll(docIds, callback) {
-      var ids = docIds.map(getAuditId);
-      auditDb.allDocs({ include_docs: true, keys: ids }, function(err, result) {
+    var MULTI_DOC_BATCH = 101;
+    function getAll(docIds, callback, results) {
+      results = results || {rows: []};
+
+      if (!docIds || !docIds.length) {
+        return callback(null, results);
+      }
+
+      var batch = docIds.splice(docIds.length - MULTI_DOC_BATCH);
+      auditDb.allDocs({ include_docs: true, keys: batch }, function(err, batchResult) {
         if (err) {
           return callback(err);
         }
-        callback(null, result.rows);
+
+        results.rows = results.rows.concat(batchResult.rows);
+
+        getAll(docIds, callback, results);
+      });
+    }
+    function bulkDocs(docs, callback, results) {
+      results = results || [];
+
+      if (!docs || !docs.length) {
+        return callback(null, results);
+      }
+
+      var batch = docs.splice(docs.length - MULTI_DOC_BATCH);
+      auditDb.bulkDocs({docs: batch}, function(err, result) {
+        if (err) {
+          return callback(err);
+        }
+
+        bulkDocs(docs, callback, results.concat(result));
       });
     }
 
