@@ -144,40 +144,42 @@ module.exports = {
       });
     }
 
-    var MULTI_DOC_BATCH = 101;
-    function getAll(docIds, callback, results) {
-      results = results || {rows: []};
-
-      if (!docIds || !docIds.length) {
-        return callback(null, results);
+    var MULTI_DOC_BATCH = 100;
+    function batch(items, initial, action, collect, callback) {
+      var partitioned = [];
+      while (items.length > 0) {
+        partitioned.push(items.splice(0, MULTI_DOC_BATCH));
       }
 
-      var batch = docIds.splice(docIds.length - MULTI_DOC_BATCH);
-      auditDb.allDocs({ include_docs: true, keys: batch }, function(err, batchResult) {
-        if (err) {
-          return callback(err);
-        }
-
-        results.rows = results.rows.concat(batchResult.rows);
-
-        getAll(docIds, callback, results);
-      });
+      async.reduce(partitioned, initial, function(memo, item, cb) {
+        action(item, function(err, results) {
+          if (err) {
+            cb(err);
+          } else {
+            cb(null, collect(memo, results));
+          }
+        });
+      }, callback);
     }
-    function bulkDocs(docs, callback, results) {
-      results = results || [];
-
-      if (!docs || !docs.length) {
-        return callback(null, results);
-      }
-
-      var batch = docs.splice(docs.length - MULTI_DOC_BATCH);
-      auditDb.bulkDocs({docs: batch}, function(err, result) {
-        if (err) {
-          return callback(err);
-        }
-
-        bulkDocs(docs, callback, results.concat(result));
-      });
+    function getAll(docIds, callback) {
+      batch(docIds, {rows: []},
+        function(docIds, cb) {
+          auditDb.allDocs({ include_docs: true, keys: docIds }, cb);
+        },
+        function(memo, results) {
+          memo.rows = memo.rows.concat(results.rows);
+          return memo;
+        },
+        callback);
+    }
+    function bulkDocs(docs, callback) {
+      batch(docs, [],
+        function(docs, cb) {
+          auditDb.bulkDocs({docs: docs}, cb);
+        },
+        function(memo, results) {
+          return memo.concat(results);
+        }, callback);
     }
 
     function getAuditId(docId) {

@@ -59,7 +59,18 @@ module.exports = {
 
     var auditDb = nano.use(auditDbName);
     var auditDbWrapper = {
-      allDocs: auditDb.list,
+      allDocs: function(options, callback) {
+        // Nano's list function puts options in the query string, which breaks
+        // with lots of doc ids. Just manually generate the request ourselves.
+        var relax = {
+          db: auditDbName,
+          method: 'POST',
+          path: '_all_docs',
+          body: options
+        };
+
+        nano.request(relax, callback);
+      },
       getDoc: auditDb.get,
       saveDoc: auditDb.insert,
       removeDoc: auditDb.destroy,
