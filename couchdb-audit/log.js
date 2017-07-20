@@ -77,6 +77,7 @@ module.exports = {
               return callback(err);
             }
             bulkDocs(auditRecords, callback);
+            // auditDb.bulkDocs({docs: auditRecords}, callback);
           });
         });
       });
@@ -162,12 +163,12 @@ module.exports = {
       }, callback);
     }
     function getAll(docIds, callback) {
-      batch(docIds, {rows: []},
+      batch(docIds, [],
         function(docIds, cb) {
           auditDb.allDocs({ include_docs: true, keys: docIds }, cb);
         },
         function(memo, results) {
-          memo.rows = memo.rows.concat(results.rows);
+          memo = memo.concat(results.rows);
           return memo;
         },
         callback);
