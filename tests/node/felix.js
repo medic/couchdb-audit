@@ -54,7 +54,7 @@ exports['bulkSave works with felix couchdb node module'] = function(test) {
   test.equal(allDocs.callCount, 1);
   test.equal(save.callCount, 2);
   var auditRecord = save.firstCall.args[0].docs;
-  
+
   auditRecord.forEach(function(record) {
     test.equal(record.type, 'audit_record');
     test.equal(record.history.length, 2);
@@ -79,7 +79,7 @@ exports['bulkSave works with felix couchdb node module'] = function(test) {
 
 exports['saving a new `data_record` creates a new `audit_record`'] = function(test) {
   test.expect(15);
-  
+
   var docId = 123;
   var auditId = docId + '-audit';
   var doc1 = {
@@ -89,8 +89,8 @@ exports['saving a new `data_record` creates a new `audit_record`'] = function(te
   };
 
   var db = {
-    saveDoc: function(doc, callback) { 
-      callback(null, {id: docId}); 
+    saveDoc: function(doc, callback) {
+      callback(null, {id: docId});
     },
     bulkDocs: function(options, callback) {
       callback(null);
@@ -154,7 +154,7 @@ exports['when allDocs fails, doc is not saved and error returned'] = function(te
 
 exports['saving a new `data_record` with id set creates a new `audit_record`'] = function(test) {
   test.expect(14);
-  
+
   var docId = '251849';
   var auditId = docId + '-audit';
   var doc1 = {
@@ -164,8 +164,8 @@ exports['saving a new `data_record` with id set creates a new `audit_record`'] =
   };
 
   var db = {
-    saveDoc: function(doc, callback) { 
-      callback(null, {id: docId}); 
+    saveDoc: function(doc, callback) {
+      callback(null, {id: docId});
     },
     bulkDocs: function(options, callback) {
       callback(null);
@@ -220,7 +220,7 @@ exports['updating a `data_record` updates the `audit_record`'] = function(test) 
   };
 
   var db = {
-    saveDoc: function(doc, callback) { 
+    saveDoc: function(doc, callback) {
       callback(null, {id: docId});
     },
     bulkDocs: function(options, callback) {
@@ -284,8 +284,8 @@ exports['deleting a `data_record` updates the `audit_record`'] = function(test) 
     _deleted: true
   };
 
-  var db = { 
-    saveDoc: function(doc, callback) { 
+  var db = {
+    saveDoc: function(doc, callback) {
       callback(null, {id: docId});
     },
     bulkDocs: function(options, callback) {
@@ -349,8 +349,8 @@ exports['updating a `data_record` creates an `audit_record` if required'] = func
     foo: 'bar'
   };
 
-  var db = { 
-    saveDoc: function(doc, callback) { 
+  var db = {
+    saveDoc: function(doc, callback) {
       callback(null, {id: docId});
     },
     bulkDocs: function(options, callback) {
@@ -410,7 +410,7 @@ exports['bulkSave updates all relevant `audit_record` docs'] = function(test) {
     foo: 'bar'
   };
 
-  var db = { 
+  var db = {
     bulkDocs: function(options, callback) {
       callback(null);
     },
@@ -493,7 +493,7 @@ exports['bulkSave creates `audit_record` docs when needed'] = function(test) {
     _deleted: true
   };
 
-  var db = { 
+  var db = {
     bulkDocs: function(options, callback) {
       callback(null);
     },
@@ -555,7 +555,7 @@ exports['bulkSave creates `audit_record` docs when needed'] = function(test) {
 
 exports['when audit fails, doc is not saved and error returned'] = function(test) {
   test.expect(2);
-  
+
   var errMsg = 'ERR1';
   var docId = 123;
   var doc1 = {
@@ -563,7 +563,7 @@ exports['when audit fails, doc is not saved and error returned'] = function(test
     type: 'data_record'
   };
 
-  var db = { 
+  var db = {
     bulkDocs: function(options, callback) {
       callback(errMsg);
     },
@@ -592,7 +592,7 @@ exports['get returns the `audit_record` for the given `data_record`'] = function
       _id: docId
     }
   };
-  
+
   var db = {
     allDocs: function(query, callback) {
       callback(null, {'rows':[ expected ]});
@@ -610,7 +610,7 @@ exports['get returns the `audit_record` for the given `data_record`'] = function
 
 exports['removeDoc updates the `audit_record` for the given `data_record`'] = function(test) {
   test.expect(14);
-  
+
   var docId = 123;
   var auditId = docId + '-audit';
   var doc1 = {

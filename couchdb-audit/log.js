@@ -76,7 +76,8 @@ module.exports = {
             if (err) {
               return callback(err);
             }
-            auditDb.bulkDocs({docs: auditRecords}, callback);
+            bulkDocs(auditRecords, callback);
+            // auditDb.bulkDocs({docs: auditRecords}, callback);
           });
         });
       });
@@ -95,7 +96,7 @@ module.exports = {
       var ids = [];
       docs.forEach(function(_doc) {
         if (_doc._id) {
-          ids.push(_doc._id);
+          ids.push(getAuditId(_doc._id));
         }
       });
       if (!ids.length) {
@@ -139,19 +140,47 @@ module.exports = {
     }
 
     function get(docId, callback) {
-      getAll([docId], function(err, result) {
+      getAll([getAuditId(docId)], function(err, result) {
         callback(err, result && result.length && result[0]);
       });
     }
 
+    var MULTI_DOC_BATCH = 100;
+    function batch(items, initial, action, collect, callback) {
+      var partitioned = [];
+      while (items.length > 0) {
+        partitioned.push(items.splice(0, MULTI_DOC_BATCH));
+      }
+
+      async.reduce(partitioned, initial, function(memo, item, cb) {
+        action(item, function(err, results) {
+          if (err) {
+            cb(err);
+          } else {
+            cb(null, collect(memo, results));
+          }
+        });
+      }, callback);
+    }
     function getAll(docIds, callback) {
-      var ids = docIds.map(getAuditId);
-      auditDb.allDocs({ include_docs: true, keys: ids }, function(err, result) {
-        if (err) {
-          return callback(err);
-        }
-        callback(null, result.rows);
-      });
+      batch(docIds, [],
+        function(docIds, cb) {
+          auditDb.allDocs({ include_docs: true, keys: docIds }, cb);
+        },
+        function(memo, results) {
+          memo = memo.concat(results.rows);
+          return memo;
+        },
+        callback);
+    }
+    function bulkDocs(docs, callback) {
+      batch(docs, [],
+        function(docs, cb) {
+          auditDb.bulkDocs({docs: docs}, cb);
+        },
+        function(memo, results) {
+          return memo.concat(results);
+        }, callback);
     }
 
     function getAuditId(docId) {
